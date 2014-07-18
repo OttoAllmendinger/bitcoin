@@ -32,6 +32,7 @@ using namespace std;
 
 static std::string strRPCUserColonPass;
 
+static bool fRPCRunning = false;
 // These are created by StartRPCThreads, destroyed in StopRPCThreads
 static asio::io_service* rpc_io_service = NULL;
 static map<string, boost::shared_ptr<deadline_timer> > deadlineTimers;
@@ -232,8 +233,8 @@ static const CRPCCommand vRPCCommands[] =
     { "getblockchaininfo",      &getblockchaininfo,      true,      false,      false },
     { "getbestblockhash",       &getbestblockhash,       true,      false,      false },
     { "getblockcount",          &getblockcount,          true,      false,      false },
-    { "getblock",               &getblock,               false,     false,      false },
-    { "getblockhash",           &getblockhash,           false,     false,      false },
+    { "getblock",               &getblock,               true,      false,      false },
+    { "getblockhash",           &getblockhash,           true,      false,      false },
     { "getdifficulty",          &getdifficulty,          true,      false,      false },
     { "getrawmempool",          &getrawmempool,          true,      false,      false },
     { "gettxout",               &gettxout,               true,      false,      false },
@@ -245,7 +246,7 @@ static const CRPCCommand vRPCCommands[] =
     { "getmininginfo",          &getmininginfo,          true,      false,      false },
     { "getnetworkhashps",       &getnetworkhashps,       true,      false,      false },
     { "prioritisetransaction",  &prioritisetransaction,  true,      false,      false },
-    { "submitblock",            &submitblock,            false,     true,       false },
+    { "submitblock",            &submitblock,            true,      true,       false },
 
     /* Raw transactions */
     { "createrawtransaction",   &createrawtransaction,   false,     false,      false },
@@ -259,19 +260,19 @@ static const CRPCCommand vRPCCommands[] =
     /* Utility functions */
     { "createmultisig",         &createmultisig,         true,      true ,      false },
     { "validateaddress",        &validateaddress,        true,      false,      false }, /* uses wallet if enabled */
-    { "verifymessage",          &verifymessage,          false,     false,      false },
+    { "verifymessage",          &verifymessage,          true,      false,      false },
     { "estimatefee",            &estimatefee,            true,      true,       false },
     { "estimatepriority",       &estimatepriority,       true,      true,       false },
 
 #ifdef ENABLE_WALLET
     /* Wallet */
-    { "addmultisigaddress",     &addmultisigaddress,     false,     false,      true },
+    { "addmultisigaddress",     &addmultisigaddress,     true,      false,      true },
     { "backupwallet",           &backupwallet,           true,      false,      true },
     { "dumpprivkey",            &dumpprivkey,            true,      false,      true },
     { "dumpwallet",             &dumpwallet,             true,      false,      true },
-    { "encryptwallet",          &encryptwallet,          false,     false,      true },
+    { "encryptwallet",          &encryptwallet,          true,      false,      true },
     { "getaccountaddress",      &getaccountaddress,      true,      false,      true },
-    { "getaccount",             &getaccount,             false,     false,      true },
+    { "getaccount",             &getaccount,             true,      false,      true },
     { "getaddressesbyaccount",  &getaddressesbyaccount,  true,      false,      true },
     { "getbalance",             &getbalance,             false,     false,      true },
     { "getnewaddress",          &getnewaddress,          true,      false,      true },
@@ -280,10 +281,10 @@ static const CRPCCommand vRPCCommands[] =
     { "getreceivedbyaddress",   &getreceivedbyaddress,   false,     false,      true },
     { "gettransaction",         &gettransaction,         false,     false,      true },
     { "getunconfirmedbalance",  &getunconfirmedbalance,  false,     false,      true },
-    { "getwalletinfo",          &getwalletinfo,          true,      false,      true },
-    { "importprivkey",          &importprivkey,          false,     false,      true },
-    { "importwallet",           &importwallet,           false,     false,      true },
-    { "importaddress",          &importaddress,          false,     false,      true },
+    { "getwalletinfo",          &getwalletinfo,          false,     false,      true },
+    { "importprivkey",          &importprivkey,          true,      false,      true },
+    { "importwallet",           &importwallet,           true,      false,      true },
+    { "importaddress",          &importaddress,          true,      false,      true },
     { "keypoolrefill",          &keypoolrefill,          true,      false,      true },
     { "listaccounts",           &listaccounts,           false,     false,      true },
     { "listaddressgroupings",   &listaddressgroupings,   false,     false,      true },
@@ -293,16 +294,16 @@ static const CRPCCommand vRPCCommands[] =
     { "listsinceblock",         &listsinceblock,         false,     false,      true },
     { "listtransactions",       &listtransactions,       false,     false,      true },
     { "listunspent",            &listunspent,            false,     false,      true },
-    { "lockunspent",            &lockunspent,            false,     false,      true },
+    { "lockunspent",            &lockunspent,            true,      false,      true },
     { "move",                   &movecmd,                false,     false,      true },
     { "sendfrom",               &sendfrom,               false,     false,      true },
     { "sendmany",               &sendmany,               false,     false,      true },
     { "sendtoaddress",          &sendtoaddress,          false,     false,      true },
     { "setaccount",             &setaccount,             true,      false,      true },
-    { "settxfee",               &settxfee,               false,     false,      true },
-    { "signmessage",            &signmessage,            false,     false,      true },
+    { "settxfee",               &settxfee,               true,      false,      true },
+    { "signmessage",            &signmessage,            true,      false,      true },
     { "walletlock",             &walletlock,             true,      false,      true },
-    { "walletpassphrasechange", &walletpassphrasechange, false,     false,      true },
+    { "walletpassphrasechange", &walletpassphrasechange, true,      false,      true },
     { "walletpassphrase",       &walletpassphrase,       true,      false,      true },
 
     /* Wallet-enabled mining */
@@ -532,7 +533,7 @@ void StartRPCThreads()
          (mapArgs["-rpcuser"] == mapArgs["-rpcpassword"])) && Params().RequireRPCPassword())
     {
         unsigned char rand_pwd[32];
-        RAND_bytes(rand_pwd, 32);
+        GetRandBytes(rand_pwd, 32);
         string strWhatAmI = "To use bitcoind";
         if (mapArgs.count("-server"))
             strWhatAmI = strprintf(_("To use the %s option"), "\"-server\"");
@@ -660,6 +661,7 @@ void StartRPCThreads()
     rpc_worker_group = new boost::thread_group();
     for (int i = 0; i < GetArg("-rpcthreads", 4); i++)
         rpc_worker_group->create_thread(boost::bind(&asio::io_service::run, rpc_io_service));
+    fRPCRunning = true;
 }
 
 void StartDummyRPCThread()
@@ -672,12 +674,15 @@ void StartDummyRPCThread()
         rpc_dummy_work = new asio::io_service::work(*rpc_io_service);
         rpc_worker_group = new boost::thread_group();
         rpc_worker_group->create_thread(boost::bind(&asio::io_service::run, rpc_io_service));
+        fRPCRunning = true;
     }
 }
 
 void StopRPCThreads()
 {
     if (rpc_io_service == NULL) return;
+    // Set this to false first, so that longpolling loops will exit when woken up
+    fRPCRunning = false;
 
     // First, cancel all timers and acceptors
     // This is not done automatically by ->stop(), and in some cases the destructor of
@@ -699,12 +704,18 @@ void StopRPCThreads()
     deadlineTimers.clear();
 
     rpc_io_service->stop();
+    cvBlockChange.notify_all();
     if (rpc_worker_group != NULL)
         rpc_worker_group->join_all();
     delete rpc_dummy_work; rpc_dummy_work = NULL;
     delete rpc_worker_group; rpc_worker_group = NULL;
     delete rpc_ssl_context; rpc_ssl_context = NULL;
     delete rpc_io_service; rpc_io_service = NULL;
+}
+
+bool IsRPCRunning()
+{
+    return fRPCRunning;
 }
 
 void RPCRunHandler(const boost::system::error_code& err, boost::function<void(void)> func)

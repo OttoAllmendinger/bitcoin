@@ -79,6 +79,7 @@ Value getpeerinfo(const Array& params, bool fHelp)
             "\nbResult:\n"
             "[\n"
             "  {\n"
+            "    \"id\": n,                   (numeric) Peer index\n"
             "    \"addr\":\"host:port\",      (string) The ip address and port of the peer\n"
             "    \"addrlocal\":\"ip:port\",   (string) local address\n"
             "    \"services\":\"xxxxxxxxxxxxxxxx\",   (string) The services offered\n"
@@ -97,8 +98,7 @@ Value getpeerinfo(const Array& params, bool fHelp)
             "    \"syncnode\" : true|false     (booleamn) if sync node\n"
             "  }\n"
             "  ,...\n"
-            "}\n"
-
+            "]\n"
             "\nExamples:\n"
             + HelpExampleCli("getpeerinfo", "")
             + HelpExampleRpc("getpeerinfo", "")
@@ -113,6 +113,7 @@ Value getpeerinfo(const Array& params, bool fHelp)
         Object obj;
         CNodeStateStats statestats;
         bool fStateStats = GetNodeStateStats(stats.nodeid, statestats);
+        obj.push_back(Pair("id", stats.nodeid));
         obj.push_back(Pair("addr", stats.addrName));
         if (!(stats.addrLocal.empty()))
             obj.push_back(Pair("addrlocal", stats.addrLocal));
@@ -137,6 +138,7 @@ Value getpeerinfo(const Array& params, bool fHelp)
             obj.push_back(Pair("syncheight", statestats.nSyncHeight));
         }
         obj.push_back(Pair("syncnode", stats.fSyncNode));
+        obj.push_back(Pair("whitelisted", stats.fWhitelisted));
 
         ret.push_back(obj);
     }
