@@ -460,6 +460,52 @@ Value decoderawtransaction(const Array& params, bool fHelp)
     return result;
 }
 
+Value execscript(const Array& params, bool fHelp) {
+  Object r;
+  CScript scriptSig;
+  CScript scriptPubKey;
+
+  if (params.size() < 2) {
+    throw runtime_error("params.size() < 2");
+  }
+
+  if (params[0].get_str().size() > 0) {
+    const vector<unsigned char> scriptSigData(
+        ParseHexV(params[0], "scriptSig"));
+    scriptSig = CScript(scriptSigData.begin(), scriptSigData.end());
+  }
+
+  if (params[1].get_str().size() > 0) {
+    const vector<unsigned char> scriptPubKeyData(
+        ParseHexV(params[1], "scriptPubKey"));
+    scriptPubKey = CScript(scriptPubKeyData.begin(), scriptPubKeyData.end());
+  }
+
+  CTransaction tx;
+  unsigned int flags = SCRIPT_VERIFY_P2SH | SCRIPT_VERIFY_STRICTENC;
+
+  vector<vector<unsigned char> > stack, stackCopy;
+  bool valid = VerifyScript(
+      scriptSig, scriptPubKey, tx, 0, flags, SIGHASH_NONE);
+
+  Array hexStack;
+
+  if (valid) {
+      EvalScript(stack, scriptSig, tx, 0, flags, SIGHASH_NONE);
+      EvalScript(stack, scriptPubKey, tx, 0, flags, SIGHASH_NONE);
+
+
+      BOOST_FOREACH(const vector<unsigned char>& value, stack)
+          hexStack.push_back(HexStr(value.begin(), value.end()));
+  }
+
+  r.push_back(Pair("stack", hexStack));
+  r.push_back(Pair("valid", valid));
+
+
+  return r;
+}
+
 Value decodescript(const Array& params, bool fHelp)
 {
     if (fHelp || params.size() != 1)
