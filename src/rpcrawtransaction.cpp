@@ -485,8 +485,12 @@ Value execscript(const Array& params, bool fHelp) {
   unsigned int flags = SCRIPT_VERIFY_P2SH | SCRIPT_VERIFY_STRICTENC;
 
   vector<vector<unsigned char> > stack, stackCopy;
-  bool valid = VerifyScript(
-      scriptSig, scriptPubKey, tx, 0, flags, SIGHASH_NONE);
+
+  bool valid = false;
+
+  try {
+    valid = VerifyScript(scriptSig, scriptPubKey, tx, 0, flags, SIGHASH_NONE);
+  } catch (...) { }
 
   Array hexStack;
 
