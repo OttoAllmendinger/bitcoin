@@ -23,6 +23,8 @@
 
 #include <functional>
 
+#include <zmq/zmqtrace.h>
+
 const std::function<std::string(const char*)> G_TRANSLATION_FUN = nullptr;
 
 static void WaitForShutdown(NodeContext& node)
@@ -144,6 +146,8 @@ static bool AppInit(int argc, char* argv[])
             return false;
         }
         fRet = AppInitMain(node);
+
+        ZTrace("AppInit()").send();
     }
     catch (const std::exception& e) {
         PrintExceptionContinue(&e, "AppInit()");

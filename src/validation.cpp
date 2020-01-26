@@ -46,6 +46,7 @@
 #include <util/validation.h>
 #include <validationinterface.h>
 #include <warnings.h>
+#include <zmq/zmqtrace.h>
 
 #include <string>
 
@@ -2359,6 +2360,8 @@ void static UpdateTip(const CBlockIndex* pindexNew, const CChainParams& chainPar
 {
     // New best block
     mempool.AddTransactionsUpdated(1);
+
+    ZTrace("UpdateTip").add(pindexNew->GetBlockHash()).send();
 
     {
         LOCK(g_best_block_mutex);
